@@ -122,7 +122,8 @@ class Sentence():
         Updates internal knowledge representation given the fact that
         a cell is known to be a mine.
         """
-        raise NotImplementedError
+        self.count -= 1
+        self.cells.remove(cell)
 
     def mark_safe(self, cell):
         """

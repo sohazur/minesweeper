@@ -107,7 +107,6 @@ class Sentence():
         """
         if len(self.cells) == self.count:
             return self.cells
-        return None
 
     def known_safes(self):
         """
@@ -115,22 +114,30 @@ class Sentence():
         """
         if self.count == 0:
             return self.cells
-        return None
 
     def mark_mine(self, cell):
         """
         Updates internal knowledge representation given the fact that
         a cell is known to be a mine.
         """
-        self.count -= 1
-        self.cells.remove(cell)
+        newCells = set()
+        for item in self.cells:
+            if item != cell:
+                newCells.add(item)
+            else:
+                self.count -= 1
+        self.cells = newCells
 
     def mark_safe(self, cell):
         """
         Updates internal knowledge representation given the fact that
         a cell is known to be safe.
         """
-        self.cells.remove(cell)
+        newCells = set()
+        for item in self.cells:
+            if item != cell:
+                newCells.add(item)
+        self.cells = newCells
 
 
 class MinesweeperAI():
@@ -187,8 +194,90 @@ class MinesweeperAI():
             5) add any new sentences to the AI's knowledge base
                if they can be inferred from existing knowledge
         """
+        # 1) mark the cell as a move that has been made
         self.moves_made.add(cell)
+        # 2) mark the cell as safe
         self.mark_safe(cell)
+        # 3) add a new sentence to the AI's knowledge base
+        # based on the value of `cell` and `count`
+        neighbors, count = self.cell_neighbors(cell, count)
+        sentence = Sentence(neighbors, count)
+        self.knowledge.append(sentence)
+
+        # 4 & 5
+        new_inferences = []
+        for s in self.knowledge:
+            if s == sentence:
+                continue
+            elif s.cells.issuperset(sentence.cells):
+                setDiff = s.cells - sentence.cells
+                # Known safes
+                if s.count == sentence.count:
+                    for safeFound in setDiff:
+                        self.mark_safe(safeFound)
+                # Known mines
+                elif len(setDiff) == s.count - sentence.count:
+                    for mineFound in setDiff:
+                        self.mark_mine(mineFound)
+                # Known inference
+                else:
+                    new_inferences.append(
+                        Sentence(setDiff, s.count - sentence.count)
+                    )
+            elif sentence.cells.issuperset(s.cells):
+                setDiff = sentence.cells-s.cells
+                # Known safes
+                if s.count == sentence.count:
+                    for safeFound in setDiff:
+                        self.mark_safe(safeFound)
+                # Known mines
+                elif len(setDiff) == sentence.count - s.count:
+                    for mineFound in setDiff:
+                        self.mark_mine(mineFound)
+                # Known inference
+                else:
+                    new_inferences.append(
+                        Sentence(setDiff, sentence.count - s.count)
+                    )
+        
+        self.knowledge.extend(new_inferences)
+        unique_knowledge = []
+        for s in self.knowledge:
+            if s not in unique_knowledge:
+                unique_knowledge.append(s)
+        self.knowledge = unique_knowledge
+
+        final_knowledge = []
+        for s in self.knowledge:
+            final_knowledge.append(s)
+            if s.known_mines():
+                for mineFound in s.known_mines():
+                    self.mark_mine(mineFound)
+                final_knowledge.pop(-1)
+            elif s.known_safes():
+                for safeFound in s.known_safes():
+                    self.mark_safe(safeFound)
+                final_knowledge.pop(-1)
+        self.knowledge = final_knowledge
+    
+    def cell_neighbors(self, cell, count):
+        neighbors = []
+
+        # Loop over all cells within one row and column
+        for i in range(cell[0] - 1, cell[0] + 2):
+            for j in range(cell[1] - 1, cell[1] + 2):
+
+                # Ignore the cell itself
+                if (i, j) == cell:
+                    continue
+
+                # Update count if cell in bounds and is mine
+                if 0 <= i < self.height and 0 <= j < self.width and (i, j) not in self.safes and (i, j) not in self.mines:
+                    neighbors.append((i, j))
+                if (i, j) in self.mines:
+                    count -= 1
+        
+        return neighbors, count
 
     def make_safe_move(self):
         """

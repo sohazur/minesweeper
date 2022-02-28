@@ -187,7 +187,8 @@ class MinesweeperAI():
             5) add any new sentences to the AI's knowledge base
                if they can be inferred from existing knowledge
         """
-        raise NotImplementedError
+        self.moves_made.add(cell)
+        self.mark_safe(cell)
 
     def make_safe_move(self):
         """
@@ -198,7 +199,14 @@ class MinesweeperAI():
         This function may use the knowledge in self.mines, self.safes
         and self.moves_made, but should not modify any of those values.
         """
-        raise NotImplementedError
+        # Calculating the safe_moves
+        safe_moves = self.safes - self.moves_made
+        # If no safe moves
+        if not safe_moves:
+            return None
+        # returing one safe move
+        return safe_moves.pop()
+        
 
     def make_random_move(self):
         """

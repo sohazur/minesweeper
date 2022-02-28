@@ -215,4 +215,16 @@ class MinesweeperAI():
             1) have not already been chosen, and
             2) are not known to be mines
         """
-        raise NotImplementedError
+        # Initializing a set with all possible values
+        board = set()
+        for i in range(self.height):
+            for j in range(self.width):
+                board.add((i, j))
+
+        # Substracting the chosen and mine cells
+        filtered_board = list(board - self.moves_made - self.mines)
+        # Choosing random move
+        if len(filtered_board) > 0:
+            random_move = filtered_board[random.randrange(len(filtered_board))]
+            return random_move
+        return None
